@@ -1,0 +1,69 @@
+filebeat.inputs:
+  - type: filestream
+    id: nginx-filestream-id
+    enabled: false
+    paths:
+      - /var/log/nginx/*.log
+    fields:
+      service: nginx
+      index_prefix: logs-nginx
+    fields_under_root: true
+    ignore_older: 72h
+
+  - type: filestream
+    id: php-filestream-id
+    enabled: true
+    paths:
+      - /var/log/php/*.log
+    fields:
+      service: php-fpm
+      index_prefix: logs-php
+    fields_under_root: true
+    ignore_older: 72h
+
+  - type: filestream
+    id: mysql-filestream-id
+    enabled: true
+    paths:
+      - /var/log/mysql/general.log*
+    fields:
+      service: mysql
+      index_prefix: logs-mysql
+    fields_under_root: true
+    ignore_older: 72h
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: true
+
+processors:
+  - add_fields:
+      when:
+        equals:
+          event.module: "nginx"
+      target: ""
+      fields:
+        index_prefix: "logs-nginx"
+
+  - add_fields:
+      when.equals:
+        event.module: "mysql"
+      target: ""
+      fields:
+        index_prefix: "logs-mysql"
+        service: "mysql"
+#  - dissect:
+#      tokenizer: '%{nginx.remote_addr} - - [%{nginx.time_local}] "%{nginx.method} %{nginx.request} HTTP/%{nginx.http_version}" %{nginx.status} %{nginx.body_bytes_sent} "%{nginx.http_referer}" "%{nginx.http_user_agent}" "%{nginx.upstream_addr}"'
+#      field: "message"
+#      target_prefix: ""
+#      ignore_failure: true
+
+  - add_host_metadata: {}
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  username: "elastic"
+  password: "changeme"
+  indices:
+    - index: "%{[index_prefix]}-%{+yyyy.MM.dd}"
+      when.has_fields: ["index_prefix"]

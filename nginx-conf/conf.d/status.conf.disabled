@@ -1,0 +1,21 @@
+server {
+    listen 80;
+    server_name localhost;
+
+    location /nginx_status {
+        stub_status;
+        access_log off;
+        allow 127.0.0.1;
+        allow 172.18.0.0/16;   # сеть docker
+	allow 172.17.0.0/16;   # моя бриджовая подсеть
+	allow 192.168.0.0/16;	
+        deny all;
+    }
+
+    location /status {
+        fastcgi_pass wordpress:9000;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /var/www/html/index.php;
+        fastcgi_param SCRIPT_NAME /status;
+    }
+}

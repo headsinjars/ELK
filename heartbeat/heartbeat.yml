@@ -1,0 +1,24 @@
+heartbeat.monitors:
+  # HTTP-проверка WordPress (через nginx)
+  - type: http
+    id: wordpress-http
+    name: "WordPress HTTP"
+    schedule: '@every 10s'
+    urls: ["http://nginx/"]      # можно /index.php, если надо точно
+    check.response:
+      status: 200
+
+  # TCP-проверка порта MySQL
+  - type: tcp
+    id: mysql-tcp
+    name: "MySQL TCP 3306"
+    schedule: '@every 10s'
+    hosts: ["db:3306"]
+
+processors:
+  - add_observer_metadata: {}
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  username: "elastic"
+  password: "changeme"

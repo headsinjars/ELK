@@ -23,9 +23,9 @@ elasticsearch.password: ${KIBANA_SYSTEM_PASSWORD}
 ## https://www.elastic.co/docs/deploy-manage/security/self-setup
 ## https://www.elastic.co/docs/reference/kibana/commands/kibana-encryption-keys
 #
-#xpack.security.encryptionKey:
-#xpack.encryptedSavedObjects.encryptionKey:
-#xpack.reporting.encryptionKey:
+xpack.security.encryptionKey: e3c58afec057867639b32c3d4493a224
+xpack.encryptedSavedObjects.encryptionKey: 1b29e37bdb65cde06afd9dc992433860
+xpack.reporting.encryptionKey: 12cf2e740a2b080ac27195b608401f9b
 
 ## Fleet
 ## https://www.elastic.co/docs/reference/kibana/configuration-reference/fleet-settings

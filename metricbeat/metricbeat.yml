@@ -1,0 +1,49 @@
+metricbeat.modules:
+  # system: метрики хоста/VM
+  - module: system
+    period: 10s
+    metricsets:
+      - cpu
+      - memory
+      - network
+      - diskio
+      - filesystem
+#      - process     # отключил из-за warning'а в логе контейнера и отсутствия прав на некоторые процессы
+      - load
+    processes: ['.*']
+    process.include_top_n:
+      by_cpu: 5
+      by_memory: 5
+    # для работы из Docker
+    hostfs: /hostfs
+
+  # mysql: контейнер db
+  - module: mysql
+    period: 10s
+    metricsets: ["status"]
+    hosts: ["tcp(db:3306)/"]
+    username: "root"
+    password: "${MYSQL_ROOT_PASSWORD}"
+
+  # nginx: контейнер nginx (stub_status)
+  - module: nginx
+    period: 10s
+    metricsets: ["stubstatus"]
+    hosts: ["http://nginx"]
+    server_status_path: "/nginx_status"
+
+  # php-fpm: контейнер wordpress (status page)
+  - module: php_fpm
+    period: 10s
+    metricsets: ["pool"]
+    status_path: "/status"
+    hosts: ["http://nginx"]   # nginx проксирует /status на php-fpm
+
+processors:
+  - add_host_metadata: {}
+  - add_cloud_metadata: {}
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  username: "elastic"
+  password: "changeme"
