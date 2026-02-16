@@ -1,0 +1,53 @@
+# Источник: nginx access + error
+[sources.nginx_logs]
+type = "file"
+include = ["/var/log/nginx/access.log*", "/var/log/nginx/error.log*"]
+read_from = "beginning"
+
+# Парсинг access.log
+[transforms.parse_nginx]
+type = "remap"
+inputs = ["nginx_logs"]
+drop_on_error = false
+source = '''
+.file = to_string(.file) ?? ""
+
+#if starts_with(.file, "/var/log/nginx/access.log") {
+#  .nginx = parse_regex!(.message, r'^(?P<remote_addr>\S+) (?P<ident>\S+) (?P<user>\S+) \[(?P<time_local>[^\]]+)\] "(?P<method>\S+) (?P<request>[^\"]*) HTTP/(?P<http_version>\S+)" (?P<status>\d{3}) (?P<body_bytes_sent>\d+) "(?P<referer>[^\"]*)" "(?P<user_agent>[^\"]*)" "(?P<upstream_addr>[^\"]*)"')
+#  .log_type = "access"
+if starts_with(.file, "/var/log/nginx/access.log") {
+  .nginx, ._err = parse_regex(.message, r'^(?P<remote_addr>\S+) (?P<ident>\S+) (?P<user>\S+) \[(?P<time_local>[^\]]+)\] "(?P<method>\S+) (?P<request>[^"]*) HTTP/(?P<http_version>[^"]+)" (?P<status>\d{3}) (?P<body_bytes_sent>\d+) "(?P<referer>[^"]*)" "(?P<user_agent>[^"]*)" "(?P<upstream_addr>[^"]*)"')
+  .log_type = "access"
+#} else if starts_with(.file, "/var/log/nginx/error.log") {
+#  .nginx_error = parse_regex!(.message, r'^(?P<time>[^ ]+ [^ ]+) \[(?P<level>[^\]]+)\] (?P<rest>.*)$')
+#  .log_type = "error"
+} else if starts_with(.file, "/var/log/nginx/error.log") {
+  .nginx_error, ._err = parse_nginx_log(.message, "error")
+  if ._err == null {
+    .log_type = "error"
+} else {
+    .log_type = "error_unparsed"
+}
+  del(._err)
+} else {
+  .log_type = "other"
+}
+'''
+
+# Elasticsearch sink
+[sinks.elasticsearch]
+type = "elasticsearch"
+inputs = ["parse_nginx"]
+endpoints = ["http://elasticsearch:9200"]
+
+[sinks.elasticsearch.data_stream]
+type = "logs"
+dataset = "nginx"
+namespace = "test"
+
+bulk.action = "create"
+
+[sinks.elasticsearch.auth]
+strategy = "basic"
+user = "elastic"
+password = "changeme"

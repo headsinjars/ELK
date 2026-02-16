@@ -1,7 +1,7 @@
 filebeat.inputs:
   - type: filestream
     id: nginx-filestream-id
-    enabled: false
+    enabled: true
     paths:
       - /var/log/nginx/*.log
     fields:
@@ -12,7 +12,7 @@ filebeat.inputs:
 
   - type: filestream
     id: php-filestream-id
-    enabled: true
+    enabled: false
     paths:
       - /var/log/php/*.log
     fields:
@@ -23,7 +23,7 @@ filebeat.inputs:
 
   - type: filestream
     id: mysql-filestream-id
-    enabled: true
+    enabled: false
     paths:
       - /var/log/mysql/general.log*
     fields:
@@ -60,10 +60,13 @@ processors:
 
   - add_host_metadata: {}
 
-output.elasticsearch:
-  hosts: ["http://elasticsearch:9200"]
-  username: "elastic"
-  password: "changeme"
-  indices:
-    - index: "%{[index_prefix]}-%{+yyyy.MM.dd}"
-      when.has_fields: ["index_prefix"]
+#output.elasticsearch:
+#  hosts: ["http://elasticsearch:9200"]
+#  username: "elastic"
+#  password: "changeme"
+#  indices:
+#    - index: "%{[index_prefix]}-%{+yyyy.MM.dd}"
+#      when.has_fields: ["index_prefix"]
+
+output.logstash:
+  hosts: ["logstash:5044"]
